@@ -4,64 +4,155 @@ public class G03_poker {
 	public static void main(String[] args) {
 		int playerMax = 2;
 		int dealerMax = 2;
-		int totalPersons = playerMax + dealerMax;
 		int handsMax = 5;
 		int rerollMax = 3;
 
-		String[] playerName = new String[] { "player1", "player2", "dealer", "" };
+		int totalPersons = playerMax + dealerMax;
+		String[] playerName = new String[] { "1", "2", "3", "4" };
 		int[] deck = new int[13 * 4];
 		int[][] hands = new int[totalPersons][handsMax];
+		int[] rerollIndex = new int[handsMax];
 		int[] rerollStock = new int[totalPersons];
-		int ngRerollDigit = 1;
 		boolean dealerFlag = false;
 		int[][] score = new int[totalPersons][2];// 0に役、1に数
+		int[][] input = new int[totalPersons][2];// 0にインプット、1にhold flag
 
 		for (int i = 0; i < totalPersons; i++) {
 			rerollStock[i] = rerollMax;
 		}
-		for (int i = 0; i < handsMax; i++) {
-			ngRerollDigit *= 10;
-		}
 
 		// コピペ用
-		// int nowPlayer,String[] playerName,int[][] hands,int[] rerollStock,int
-		// ngRerollDigit,int[] deck,
-		// nowPlayer,playerName,hands,rerollStock,ngRerollDigit,deck,
+		// int nowPlayer,String[] playerName,int[][] hands,int[] rerollStock,,int[]
+		// deck,
+		// nowPlayer,playerName,hands,rerollStock,deck,
 
-		// プレイヤーネームの確認とディーラー作成
 		playerConf(playerName, playerMax, totalPersons);
-
-		// それぞれに５枚のカード配る
 		openingDraw(deck, hands);
+		// プレイヤー数分のforループ→プレイヤーかディーラーのif→ホールド条件のwhileループ→ホールドならスキップ
+		for (int nowPlayer = 0; nowPlayer < totalPersons; nowPlayer++) {// プレイヤー数文のforるーぷ
+			if (nowPlayer < playerMax) {// プレイヤーorディーラー分岐
+				while (input[nowPlayer][0] != 2) {// リロールやめるまでループ
+					if (input[nowPlayer][0] == 0) {
+						playerAnnounse(nowPlayer, playerName);
+						input[nowPlayer][0] = 1;
+					}
+					HandsDisplay(nowPlayer, playerName, hands);
+					RerollDisplay(nowPlayer, hands, input, rerollStock);
+					inputAndErrorCheck(nowPlayer, hands, input);
+					if (input[nowPlayer][0] != 2) {// リロールやめたら後半スキップ
+						getRerollIndex(nowPlayer, hands, input, rerollIndex);
+						rerollDraw(nowPlayer, hands, rerollIndex, deck);
+						rerollStock[nowPlayer]--;
+					}
 
-		// 表示→input→リロールをプレイヤー分
-		for (int nowPlayer = 0; nowPlayer < totalPersons; nowPlayer++) {
-			if (nowPlayer < playerMax) {
-				nowPlayerHandsDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
-				nowPlayerRerollDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
+				}
 			} else {
-				dealerFlag = true;
-				nowPlayerHandsDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
+				playerAnnounse(nowPlayer, playerName);
+				HandsDisplay(nowPlayer, playerName, hands);
 //					dealerRerollJudge();
 			}
 		}
 
-		for (int nowDealer = 0; nowDealer < dealerMax; nowDealer++) {
-			System.out.println("dealerのたーｎ");
-		}
 		// 判定
 	}
 
 	public static void playerConf(String[] playerName, int playerMax, int totalPersons) {
 		for (int i = 0; i < playerMax; i++) {
-			if (playerName == null) {
-				System.out.println("player" + (i + 1) + "の名前を入れてね");
+			if (playerName[i] == null) {
+				System.out.println("player" + (i + 1) + "の名前を入れて");
 				playerName[i] = new java.util.Scanner(System.in).nextLine();
 			}
 		}
 		for (int i = playerMax; i < totalPersons; i++) {
-			playerName[i] = "dealer" + "i-playerMax-1";
+			if (playerName[i] == null) {
+				playerName[i] = "dealer" + (i - playerMax + 1);
+			}
 		}
+
+		for (String value : playerName)
+			System.out.print(value + " ★ ");
+		System.out.println("以上、" + totalPersons + "名のプレイヤーでお送りします");
+	}
+
+	public static void openingDraw(int[] deck, int[][] hands) {
+		for (int i = 0; i < hands.length; i++) {
+			for (int j = 0; j < hands[i].length; j++) {
+				hands[i][j] = tempDraw(deck);
+			}
+		}
+	}
+
+	public static void playerAnnounse(int nowPlayer, String[] playerName) {
+		System.out.println();
+		System.out.println();
+		System.out.println(playerName[nowPlayer] + "'s turn");
+	}
+
+	public static void HandsDisplay(int nowPlayer, String[] playerName, int[][] hands) {
+		System.out.print(playerName[nowPlayer] + " ");
+		for (int i = 0; i < hands[0].length; i++) {
+			System.out.print("【" + convertCard(hands[nowPlayer][i]) + "】 ");
+
+		}
+	}
+
+	public static void RerollDisplay(int nowPlayer, int[][] hands, int[][] input, int[] rerollStock) {
+		System.out.print("(残りリロール" + rerollStock[nowPlayer] + "回) ");
+		if (rerollStock[nowPlayer] == 0) {
+			input[nowPlayer][0] = 2;
+		} else {
+			System.out.print("1~" + hands[nowPlayer].length + ".reroll");
+		}
+		System.out.print("  0.hold ＞");
+	}
+
+	public static void inputAndErrorCheck(int nowPlayer, int hands[][], int[][] input) {
+		// リロールの枚数とインデックスの最大値チェック
+		// エラーが出たらループ
+		while (true) {
+			input[nowPlayer][1] = new java.util.Scanner(System.in).nextInt();
+			if (input[nowPlayer][1] == 0) {
+				input[nowPlayer][0] = 2;
+				return;
+			}
+			int temp = input[nowPlayer][1];
+			int digit = 0;
+			while (temp != 0) {
+				if (temp % 10 > hands[nowPlayer].length)
+					System.out.print(temp + "は無効です。　＞");
+				digit++;
+				temp /= 10;
+			}
+			if (digit > hands[nowPlayer].length)
+				System.out.print(digit - hands[nowPlayer].length + "桁多いです。 ＞");
+
+			if (digit <= hands[nowPlayer].length)
+				return;
+		}
+	}
+
+	public static void getRerollIndex(int nowPlayer, int[][] hands, int[][] input, int[] rerollIndex) {
+		for (int i = 0; i < hands[nowPlayer].length; i++) {
+			rerollIndex[i] = (input[nowPlayer][1] % 10 - 1);
+			input[nowPlayer][1] /= 10;
+//			System.out.println(rerollIndex[i]); // debug
+		}
+	}
+
+	public static void rerollDraw(int nowPlayer, int[][] hands, int[] rerollIndex, int[] deck) {
+		for (int i = 0; i < hands[nowPlayer].length; i++) {
+			if (rerollIndex[i] == -1)
+				break;
+			// System.out.print(rerollIndex[i]+"★");//debug
+			hands[nowPlayer][(rerollIndex[i])] = tempDraw(deck);
+		}
+	}
+
+	public static void dealerRerollJudge(int nowPlayer, String[] playerName, int[][] hands, int[] rerollStock,
+			int[] deck) {
+//			if (score[nowPlayer] < dealerJudge) {
+
+//			}
 	}
 
 	public static int tempDraw(int[] deck) {
@@ -75,14 +166,6 @@ public class G03_poker {
 		}
 	}
 
-	public static void openingDraw(int[] deck, int[][] hands) {
-		for (int i = 0; i < hands.length; i++) {
-			for (int j = 0; j < hands[i].length; j++) {
-				hands[i][j] = tempDraw(deck);
-			}
-		}
-	}
-
 	public static String convertCard(int card) {
 		String[] suit = new String[] { "♠", "♡", "♦", "♧" };
 		int cardNum = card % 13 + 1;
@@ -91,87 +174,6 @@ public class G03_poker {
 			convertedCard = suit[card / 13] + "0" + (cardNum);
 		}
 		return convertedCard;
-	}
-
-	public static void nowPlayerHandsDisplay(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck) {
-		System.out.print(playerName[nowPlayer]);
-		for (int i = 0; i < hands[0].length; i++) {
-			System.out.print("【" + convertCard(hands[nowPlayer][i]) + "】");
-
-		}
-	}
-
-	public static void nowPlayerRerollDisplay(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck) {
-		System.out.print("残りリロール" + rerollStock[nowPlayer] + "回 0.hold");
-		if (rerollStock[nowPlayer] != 0) {
-			System.out.print(" 1~" + hands[nowPlayer].length + ".reroll");
-		}
-		System.out.print(" ＞");
-		rerollInput(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
-	}
-
-	public static void rerollInput(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck) {
-
-		if (rerollStock[nowPlayer] == 0) {
-			inputHold(nowPlayer, playerName, hands, rerollStock, ngRerollDigit, deck);
-		}
-		int rerollInput = new java.util.Scanner(System.in).nextInt();
-		if (rerollInput == 0) {
-			inputHold(nowPlayer, playerName, hands, rerollStock, ngRerollDigit, deck);
-		} else {
-			rerollInputJudge(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck, rerollInput);
-		}
-	}
-
-	public static void rerollInputJudge(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck, int rerollInput) {
-
-		int[] rerollIndex = new int[hands[nowPlayer + 1].length];
-		for (int i = 0; i < hands[nowPlayer].length; i++) {
-			rerollIndex[i] = (rerollInput % 10 - 1);
-			rerollInput /= 10;
-			// System.out.println(rerollIndex[i]); //debug
-		}
-
-		for (int i = 0; i < rerollIndex.length; i++) {
-			if (rerollIndex[i] >= rerollIndex.length) {
-				System.out.print(rerollIndex[i] + 1 + "は無効です。");
-				nowPlayerRerollDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
-			}
-		}
-		rerollStock[nowPlayer]--;
-
-		rerollDraw(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck, rerollIndex);
-	}
-
-	public static void dealerRerollJudge(int nowPlayer, String[] playerName, int[][] hands, int[] rerollStock,
-			int ngRerollDigit, int[] deck) {
-//			if (score[nowPlayer] < dealerJudge) {
-
-//			}
-	}
-
-	public static void rerollDraw(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck, int[] rerollIndex) {
-		for (int i = 0; i < hands[nowPlayer].length; i++) {
-			if (rerollIndex[i] == -1) {
-				break;
-			}
-			// System.out.print(rerollIndex[i]+"★");//debug
-			hands[nowPlayer][(rerollIndex[i])] = tempDraw(deck);
-		}
-		nowPlayerHandsDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
-		nowPlayerRerollDisplay(nowPlayer, dealerFlag, playerName, hands, rerollStock, ngRerollDigit, deck);
-	}
-
-	public static void inputHold(int nowPlayer, String[] playerName, int[][] hands, int[] rerollStock,
-			int ngRerollDigit, int[] deck) {
-		System.out.println();
-		System.out.println();
-		System.out.println("next player's opening reroll");
 	}
 
 	public static void scoreClearing(int[][] Score) {
@@ -193,7 +195,7 @@ public class G03_poker {
 	}
 
 	public static void scoreMath(int nowPlayer, boolean dealerFlag, String[] playerName, int[][] hands,
-			int[] rerollStock, int ngRerollDigit, int[] deck, int[] rerollIndex) {
+			int[] rerollStock, int[] deck, int[] rerollIndex) {
 		// ストレート判定
 		// ストレート判定
 
