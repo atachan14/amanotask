@@ -1,4 +1,4 @@
-package chapter04;
+package chapter04_array;
 
 public class G04_bingo {
 	public static void main(String[] args) {

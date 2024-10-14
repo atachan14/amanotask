@@ -4,8 +4,8 @@ public class G02_dice_poker {
 	public static void main(String[] args) {
 
 		int playerTotal = 2; // プレイヤー数
-		final int diceTotal = 5; // サイコロの個数
-		final int diceSide = 6; // サイコロの面数
+		final int diceTotal = 5; // サイコロの個数 定数
+		final int diceSide = 6; // サイコロの面数　定数
 		int reroll = 2 + 1; // 最大リロール数
 		int dealerR = 300; // ディーラーのリロール基準
 
